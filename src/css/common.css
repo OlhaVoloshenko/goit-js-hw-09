@@ -35,3 +35,31 @@ img {
 .label {
   text-transform: uppercase;
 }
+.buttons {
+  display: flex;
+
+  justify-content: center;
+  padding-top: 200px;
+}
+.one-button {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.8;
+
+  border-color: antiquewhite;
+  width: 100px;
+  height: 50px;
+
+  margin-right: 50px;
+}
+
+.two-button {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.8;
+
+
+  border-color: antiquewhite;
+  width: 100px;
+  height: 50px;
+}
