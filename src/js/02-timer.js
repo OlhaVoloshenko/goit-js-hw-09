@@ -1,87 +1,83 @@
-
-
-import '../css/common.css';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
 const refs = {
-  startBtn: document.querySelector('button[data-action-start]'),
-  stopBtn: document.querySelector('button[data-action-stop]'),
-  clockface: document.querySelector('.js-clockface'),
+  datetimePicker: document.querySelector("#datetime-picker"),
+  btnStart: document.querySelector('[data-start]'),
+  days: document.querySelector('[data-days]'),
+  hours: document.querySelector('[data-hours]'),
+  minutes: document.querySelector('[data-minutes]'),
+  seconds: document.querySelector('[data-seconds]'),
 };
 
-class Timer {
-  constructor({ onTick }) {
-    this.intervalId = null;
-    this.isActive = false;
-    this.onTick = onTick;
+let selectedDate = null;
+let intervalId = null;
 
-    this.init();
-  }
-
-  init() {
-    const time = this.getTimeComponents(0);
-    this.onTick(time);
-  }
-
-  start() {
-    if (this.isActive) {
-      return;
+const options = {
+  enableTime: true,
+  time_24hr: true,
+  defaultDate: new Date(),
+  minuteIncrement: 1,
+  onClose(selectedDates) {
+    console.log(selectedDates[0]);
+    if (selectedDates[0] - Date.now() < 0) {
+      Notify.failure('Please choose a date in the future', {
+        timeout: 2000,
+      });
+    } else {
+      selectedDate = selectedDates[0];
+      refs.btnStart.removeAttribute('disabled');
     }
+  },
+};
 
-    const startTime = Date.now();
-    this.isActive = true;
+refs.btnStart.setAttribute('disabled', true);
 
-    this.intervalId = setInterval(() => {
-      const currentTime = Date.now();
-      const deltaTime = currentTime - startTime;
-      const time = this.getTimeComponents(deltaTime);
+flatpickr(refs.datetimePicker, options);
 
-      this.onTick(time);
-    }, 1000);
+refs.btnStart.addEventListener('click', btnStartClick);
+
+function btnStartClick() {
+  refs.datetimePicker.setAttribute('disabled', true);
+  refs.btnStart.setAttribute('disabled', true);
+  intervalId = setInterval(timeUpdate, 1000);
+}
+function timeUpdate() {
+  const deltaConvertMs = selectedDate - Date.now();
+
+  if(deltaConvertMs <= 0) {
+    clearInterval(intervalId);
+    return;
   }
 
-  stop() {
-    clearInterval(this.intervalId);
-    this.isActive = false;
-    const time = this.getTimeComponents(0);
-    this.onTick(time);
-  }
-
-  /*
-   * - Принимает время в миллисекундах
-   * - Высчитывает сколько в них вмещается часов/минут/секунд
-   * - Возвращает обьект со свойствами hours, mins, secs
-   * - Адская копипаста со стека 💩
-   */
-  getTimeComponents(time) {
-    const hours = this.pad(
-      Math.floor((time % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-    );
-    const mins = this.pad(Math.floor((time % (1000 * 60 * 60)) / (1000 * 60)));
-    const secs = this.pad(Math.floor((time % (1000 * 60)) / 1000));
-
-    return { hours, mins, secs };
-  }
-
-  /*
-   * Принимает число, приводит к строке и добавляет в начало 0 если число меньше 2-х знаков
-   */
-  pad(value) {
-    return String(value).padStart(2, '0');
-  }
+  const timeRemaining = convertMs(deltaConvertMs);
+  
+  refs.days.textContent = addLeadingZero(timeRemaining.days);
+  refs.hours.textContent = addLeadingZero(timeRemaining.hours);
+  refs.minutes.textContent = addLeadingZero(timeRemaining.minutes);
+  refs.seconds.textContent = addLeadingZero(timeRemaining.seconds);
 }
 
-const timer = new Timer({
-  onTick: updateClockface,
-});
+ function convertMs(ms) {
+    // Number of milliseconds per unit of time
+    const second = 1000;
+    const minute = second * 60;
+    const hour = minute * 60;
+    const day = hour * 24;
+  
+    // Remaining days
+    const days = Math.floor(ms / day);
+    // Remaining hours
+    const hours = Math.floor((ms % day) / hour);
+    // Remaining minutes
+    const minutes = Math.floor(((ms % day) % hour) / minute);
+    // Remaining seconds
+    const seconds = Math.floor((((ms % day) % hour) % minute) / second);
+  
+    return { days, hours, minutes, seconds };
+  }
 
-refs.startBtn.addEventListener('click', timer.start.bind(timer));
-refs.stopBtn.addEventListener('click', timer.stop.bind(timer));
-
-/*
- * - Принимает время в миллисекундах
- * - Высчитывает сколько в них вмещается часов/минут/секунд
- * - Рисует интерфейс
- */
-function updateClockface({ hours, mins, secs }) {
-  refs.clockface.textContent = `${hours}:${mins}:${secs}`;
-}
+  function addLeadingZero(value) {
+    return value.toString().padStart(2, 0);
+  }
